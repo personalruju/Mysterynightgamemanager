@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystery Night — Whodunnit Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0e0c0a;
+  --surface: #161310;
+  --card: #1d1915;
+  --border: #2e2820;
+  --amber: #e8a020;
+  --amber-dim: #7a5510;
+  --red: #c0392b;
+  --green: #27ae60;
+  --text: #e8dcc8;
+  --muted: #7a6e5f;
+  --highlight: #f5c842;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Crimson Pro', Georgia, serif;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(232,160,32,0.07) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* ─── NAV ─── */
+nav {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(14,12,10,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.5rem;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.15em;
+  color: var(--amber);
+  padding: 0.9rem 0;
+}
+.nav-pills { display: flex; gap: 0.25rem; padding: 0.5rem 0; }
+.npill {
+  background: none; border: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); padding: 0.4rem 0.9rem; border-radius: 20px;
+  cursor: pointer; transition: all 0.2s;
+}
+.npill:hover { color: var(--text); background: var(--card); }
+.npill.active { color: var(--bg); background: var(--amber); }
+
+/* ─── PAGES ─── */
+.page { display: none; max-width: 880px; margin: 0 auto; padding: 2rem 1.2rem 4rem; }
+.page.active { display: block; animation: rise 0.35s ease; }
+@keyframes rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+/* ─── HERO ─── */
+.hero { text-align: center; padding: 3rem 1rem 2.5rem; }
+.hero-tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--amber); border: 1px solid var(--amber-dim);
+  padding: 0.3rem 1rem; border-radius: 20px; margin-bottom: 1.5rem;
+}
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 10vw, 6rem);
+  line-height: 0.9; letter-spacing: 0.04em;
+  color: var(--text);
+  margin-bottom: 1.2rem;
+}
+.hero h1 span { color: var(--amber); }
+.hero-desc { font-size: 1.05rem; color: var(--muted); max-width: 500px; margin: 0 auto 2rem; line-height: 1.7; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+.chip {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--muted); padding: 0.35rem 0.8rem; border-radius: 4px;
+}
+
+/* ─── SECTION HEADING ─── */
+.sh { display: flex; align-items: center; gap: 1rem; margin: 2.5rem 0 1.2rem; }
+.sh h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.08em; color: var(--amber); white-space: nowrap; }
+.sh-line { flex: 1; height: 1px; background: var(--border); }
+
+/* ─── CARDS ─── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.4rem 1.6rem;
+  margin-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+.card-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--amber); margin-bottom: 0.5rem;
+}
+.card h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text); }
+.card p { font-size: 0.95rem; line-height: 1.7; color: #b5a898; }
+.card.amber-glow { border-color: var(--amber-dim); box-shadow: 0 0 20px rgba(232,160,32,0.08); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media(max-width:600px) { .two-col { grid-template-columns: 1fr; } .nav-pills { gap:0; } .npill { padding: 0.4rem 0.6rem; font-size:0.55rem; } }
+
+/* ─── TIMELINE ─── */
+.tl { list-style: none; padding-left: 1.2rem; border-left: 2px solid var(--border); }
+.tl li { position: relative; padding: 0 0 1.3rem 1.2rem; font-size: 0.95rem; line-height: 1.65; color: #b5a898; }
+.tl li::before { content:''; position: absolute; left: -0.45rem; top: 0.5rem; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+.tl li strong { display: block; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); margin-bottom: 0.25rem; }
+
+/* ─── CASE GAME ENGINE ─── */
+.case-wrap { max-width: 800px; }
+
+/* Progress bar */
+.progress-bar-wrap { margin: 1.2rem 0; }
+.progress-label {
+  display: flex; justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 0.5rem;
+}
+.progress-track { height: 4px; background: var(--border); border-radius: 4px; }
+.progress-fill { height: 4px; background: var(--amber); border-radius: 4px; transition: width 0.6s ease; }
+
+/* Scene box */
+.scene-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--amber);
+  border-radius: 8px;
+  padding: 1.5rem 1.6rem;
+  margin-bottom: 1.2rem;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text);
+}
+.scene-box .scene-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem; letter-spacing: 0.1em;
+  color: var(--amber); margin-bottom: 0.6rem;
+}
+
+/* Suspect cards */
+.suspects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.8rem; margin-bottom: 1.2rem; }
+.suspect-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem 1.1rem; cursor: default;
+  transition: border-color 0.2s;
+}
+.suspect-card.highlighted { border-color: var(--amber); }
+.suspect-name { font-weight: 600; font-size: 1rem; margin-bottom: 0.15rem; }
+.suspect-role { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); margin-bottom: 0.5rem; }
+.suspect-bio { font-size: 0.85rem; line-height: 1.6; color: var(--muted); }
+
+/* Clue unlock system */
+.clue-section { margin-bottom: 1.2rem; }
+.clue-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+.clue-header h3 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 0.08em; color: var(--text);
+}
+.clue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.7rem; }
+.clue-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem 1.1rem;
+  position: relative; overflow: hidden;
+  transition: all 0.4s ease;
+  min-height: 90px;
+}
+.clue-card.locked {
+  filter: blur(0px);
+  cursor: default;
+}
+.clue-card.locked .clue-text { visibility: hidden; }
+.clue-card.locked::after {
+  content: attr(data-timer);
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); text-align: center; padding: 0.5rem;
+}
+.clue-card.unlocked { border-color: var(--amber-dim); animation: unlockPop 0.5s ease; }
+.clue-card.unlocked::after { display: none; }
+@keyframes unlockPop { 0%{transform:scale(0.95);opacity:0.5} 60%{transform:scale(1.02)} 100%{transform:scale(1);opacity:1} }
+.clue-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--amber); margin-bottom: 0.3rem;
+}
+.clue-text { font-size: 0.9rem; line-height: 1.6; color: var(--text); }
+
+/* Timer widget */
+.timer-widget {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem 1.4rem;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem;
+}
+.timer-display {
+  font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem;
+  letter-spacing: 0.1em; color: var(--amber);
+}
+.timer-display.urgent { color: var(--red); animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.timer-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 0.2rem; }
+.timer-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Buttons */
+.btn {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  border: none; border-radius: 6px; padding: 0.6rem 1.2rem;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-amber { background: var(--amber); color: var(--bg); }
+.btn-amber:hover { background: var(--highlight); }
+.btn-outline { background: none; border: 1px solid var(--border); color: var(--muted); }
+.btn-outline:hover { border-color: var(--amber); color: var(--text); }
+.btn-red { background: var(--red); color: white; }
+.btn-red:hover { background: #e74c3c; }
+.btn-green { background: var(--green); color: white; }
+.btn-green:hover { background: #2ecc71; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Vote section */
+.vote-section { margin-top: 1.5rem; }
+.vote-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.6rem; margin: 1rem 0; }
+.vote-btn {
+  background: var(--card); border: 2px solid var(--border);
+  border-radius: 8px; padding: 0.8rem; cursor: pointer;
+  font-family: 'Crimson Pro', serif; font-size: 0.95rem;
+  color: var(--text); transition: all 0.2s; text-align: center;
+}
+.vote-btn:hover { border-color: var(--amber); color: var(--amber); }
+.vote-btn.selected { border-color: var(--amber); background: rgba(232,160,32,0.1); color: var(--amber); }
+
+/* Result panel */
+.result-panel {
+  background: var(--surface); border: 2px solid var(--amber);
+  border-radius: 12px; padding: 2rem; text-align: center;
+  margin-top: 1.5rem; display: none;
+  animation: rise 0.5s ease;
+}
+.result-panel.show { display: block; }
+.result-panel.correct { border-color: var(--green); }
+.result-panel.wrong { border-color: var(--red); }
+.result-icon { font-size: 3rem; margin-bottom: 0.8rem; }
+.result-panel h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 0.1em; margin-bottom: 0.6rem; }
+.result-panel.correct h2 { color: var(--green); }
+.result-panel.wrong h2 { color: var(--red); }
+.result-explanation { font-size: 1rem; line-height: 1.7; color: #b5a898; max-width: 580px; margin: 0 auto; }
+.score-badge {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace; font-size: 1rem;
+  color: var(--bg); background: var(--amber);
+  padding: 0.4rem 1.2rem; border-radius: 20px; margin-top: 1rem;
+}
+
+/* Hint button */
+.hint-section { display: flex; align-items: center; gap: 1rem; margin: 0.8rem 0; }
+.hint-text { font-size: 0.9rem; font-style: italic; color: var(--muted); }
+
+/* Discussion prompt */
+.discussion-box {
+  background: rgba(232,160,32,0.06);
+  border: 1px dashed var(--amber-dim);
+  border-radius: 8px; padding: 1rem 1.2rem;
+  margin: 1rem 0;
+}
+.discussion-box .d-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--amber); margin-bottom: 0.4rem;
+}
+.discussion-box p { font-size: 0.9rem; line-height: 1.65; color: #b5a898; font-style: italic; }
+
+/* Case selector */
+.case-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+.case-option {
+  background: var(--card); border: 2px solid var(--border);
+  border-radius: 10px; padding: 1.5rem;
+  cursor: pointer; transition: all 0.25s;
+  text-align: center;
+}
+.case-option:hover, .case-option.active-case { border-color: var(--amber); background: rgba(232,160,32,0.05); }
+.case-option .co-num { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; color: var(--amber); line-height: 1; }
+.case-option .co-title { font-size: 1.1rem; font-weight: 600; margin: 0.3rem 0; }
+.case-option .co-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+/* GM override */
+.gm-box {
+  background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 8px; padding: 1rem 1.2rem; margin: 0.8rem 0;
+}
+.gm-box .gm-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--red); margin-bottom: 0.4rem; }
+.gm-box p { font-size: 0.88rem; line-height: 1.6; color: #b5a898; }
+
+.divider { height: 1px; background: var(--border); margin: 1.8rem 0; }
+
+/* Scrollable clue log */
+.log-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem 1.2rem;
+  max-height: 200px; overflow-y: auto; margin: 1rem 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+  line-height: 1.8; color: var(--muted);
+}
+.log-panel .log-entry { color: var(--text); }
+.log-panel .log-entry span { color: var(--amber); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">🕵 Mystery Night</div>
+  <div class="nav-pills">
+    <button class="npill active" onclick="showPage('home', this)">Home</button>
+    <button class="npill" onclick="showPage('howto', this)">How To Play</button>
+    <button class="npill" onclick="showPage('case1', this)">Case I</button>
+    <button class="npill" onclick="showPage('case2', this)">Case II</button>
+    <button class="npill" onclick="showPage('gm', this)">GM Only</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════ HOME ══════════════════════════ -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-tag">Office Games Night • 2 Teams • 20 People</div>
+    <h1>WHO<br><span>DUNNIT?</span></h1>
+    <p class="hero-desc">No notes. No running around. No roleplay. Just a mystery, the facts, and your team's brain. You have 35 minutes. Clock's ticking.</p>
+    <div class="chips">
+      <span class="chip">🧠 Pure deduction</span>
+      <span class="chip">⏱ 30–45 min</span>
+      <span class="chip">👥 10 per team</span>
+      <span class="chip">📵 No equipment</span>
+      <span class="chip">😂 Guaranteed drama</span>
+    </div>
+  </div>
+
+  <div class="sh"><h2>What Kind of Game Is This?</h2><div class="sh-line"></div></div>
+
+  <div class="two-col">
+    <div class="card amber-glow">
+      <div class="card-tag">The Format</div>
+      <h3>Think Together, Solve Together</h3>
+      <p>Each team gets a case: a crime, a set of suspects, and facts. Clues unlock every few minutes — automatically. Your team discusses, debates, and eliminates suspects. At the end, you vote on your culprit. That's it.</p>
+    </div>
+    <div class="card">
+      <div class="card-tag">What Makes It Fun</div>
+      <h3>The argument IS the game</h3>
+      <p>The cases are designed so multiple suspects seem guilty at first. Every clue flips the table. Half the fun is confidently accusing someone… and being completely wrong three clues later.</p>
+    </div>
+  </div>
+
+  <div class="sh"><h2>Pick Your Cases</h2><div class="sh-line"></div></div>
+  <div class="case-selector">
+    <div class="case-option" onclick="showPage('case1', null)">
+      <div class="co-num">I</div>
+      <div class="co-title">The Vanishing Heirloom</div>
+      <div class="co-desc">A priceless necklace disappears during a lavish family wedding weekend. Five suspects, zero witnesses.</div>
+    </div>
+    <div class="case-option" onclick="showPage('case2', null)">
+      <div class="co-num">II</div>
+      <div class="co-title">The Last Reservation</div>
+      <div class="co-desc">A famous chef is found locked inside his own restaurant kitchen — from the inside. The back door is bolted. No one saw anything.</div>
+    </div>
+  </div>
+
+  <div class="sh"><h2>Game Flow</h2><div class="sh-line"></div></div>
+  <ul class="tl">
+    <li><strong>0:00 — Scene is revealed</strong>GM reads the case aloud. Team reads the suspect list together. Everyone can see everything on one shared screen.</li>
+    <li><strong>0:03 — First clues unlock</strong>Two starter clues are visible immediately. Team begins discussing. Point a finger too early — you'll regret it.</li>
+    <li><strong>0:10 — Clue Wave 2 unlocks</strong>New evidence appears. Old theories crumble. New suspects rise. Chaos.</li>
+    <li><strong>0:20 — Clue Wave 3 unlocks</strong>The critical clue. One clear pattern emerges — if your team has been paying attention.</li>
+    <li><strong>0:30 — Final Vote</strong>GM calls time. Team nominates one culprit. Reveal happens. Scores awarded.</li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════ HOW TO PLAY ══════════════════════════ -->
+<div class="page" id="page-howto">
+  <div class="sh" style="margin-top:1rem;"><h2>Rules of the Game</h2><div class="sh-line"></div></div>
+
+  <div class="card amber-glow">
+    <div class="card-tag">The Golden Rule</div>
+    <h3>Everything you need is on screen. No notes required.</h3>
+    <p>You will not need to write anything down. Clues stay visible once unlocked. Suspect details are always there. Your only job is to talk to your team and form a theory.</p>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-tag">Do This</div>
+      <p style="font-size:0.9rem; line-height:1.9;">
+        ✅ Read the scene together<br>
+        ✅ Discuss each suspect out loud<br>
+        ✅ Challenge each other's theories<br>
+        ✅ Wait for new clues before deciding<br>
+        ✅ Enjoy being wrong
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-tag">Don't Do This</div>
+      <p style="font-size:0.9rem; line-height:1.9;">
+        ❌ Take notes — clues don't disappear<br>
+        ❌ Lock in your answer too early<br>
+        ❌ Google the answer (yes, someone always tries)<br>
+        ❌ Talk over each other in the last 2 minutes<br>
+        ❌ Accuse someone just because you dislike them
+      </p>
+    </div>
+  </div>
+
+  <div class="sh"><h2>Scoring</h2><div class="sh-line"></div></div>
+  <div class="card">
+    <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left; padding:0.6rem 0; color:var(--amber); font-family:'JetBrains Mono',monospace; font-size:0.62rem; letter-spacing:0.1em; text-transform:uppercase;">Achievement</th>
+          <th style="text-align:right; padding:0.6rem 0; color:var(--amber); font-family:'JetBrains Mono',monospace; font-size:0.62rem; letter-spacing:0.1em; text-transform:uppercase;">Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:0.7rem 0; color:#b5a898;">Correct culprit named</td><td style="text-align:right; font-weight:600; color:var(--text);">10 pts</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:0.7rem 0; color:#b5a898;">Correct motive identified</td><td style="text-align:right; font-weight:600; color:var(--text);">+3 pts</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:0.7rem 0; color:#b5a898;">Solved before Wave 3 clues</td><td style="text-align:right; font-weight:600; color:var(--text);">+4 pts</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:0.7rem 0; color:#b5a898;">Wrong culprit</td><td style="text-align:right; font-weight:600; color:var(--red);">0 pts</td></tr>
+        <tr><td style="padding:0.7rem 0; color:var(--muted); font-style:italic;">Maximum per case</td><td style="text-align:right; color:var(--muted); font-style:italic;">17 pts</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sh"><h2>Discussion Sparks</h2><div class="sh-line"></div></div>
+  <p style="font-size:0.9rem; color:var(--muted); margin-bottom:1rem;">If your team goes quiet, throw one of these into the group:</p>
+  <div class="card"><p>"Who actually had <em>access</em> to do this — physically?" </p></div>
+  <div class="card"><p>"Who had the most to <em>gain</em> if this crime succeeded?"</p></div>
+  <div class="card"><p>"Who is behaving strangely and hasn't been questioned yet?"</p></div>
+  <div class="card"><p>"Which suspect's alibi is suspiciously perfect?"</p></div>
+  <div class="card"><p>"Let's eliminate the impossible — who definitely couldn't have done it?"</p></div>
+</div>
+
+<!-- ══════════════════════════ CASE 1 ══════════════════════════ -->
+<div class="page" id="page-case1">
+  <div class="sh" style="margin-top:0.5rem;"><h2>Case I — The Vanishing Heirloom</h2><div class="sh-line"></div></div>
+
+  <!-- Timer -->
+  <div class="timer-widget">
+    <div>
+      <div class="timer-display" id="c1-timer">35:00</div>
+      <div class="timer-label">Time Remaining</div>
+    </div>
+    <div class="timer-btns">
+      <button class="btn btn-amber" onclick="startTimer('c1')">▶ Start</button>
+      <button class="btn btn-outline" onclick="pauseTimer('c1')">⏸ Pause</button>
+      <button class="btn btn-outline" onclick="resetTimer('c1')">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar-wrap">
+    <div class="progress-label"><span>Investigation Progress</span><span id="c1-clue-count">0 / 6 clues unlocked</span></div>
+    <div class="progress-track"><div class="progress-fill" id="c1-progress" style="width:0%"></div></div>
+  </div>
+
+  <!-- Scene -->
+  <div class="scene-box">
+    <div class="scene-title">📋 The Scene</div>
+    The Malhotra family is hosting a three-day wedding celebration at their countryside farmhouse. On the second morning, 72-year-old Kamla Malhotra discovers her emerald necklace — a family heirloom worth ₹18 lakhs — is missing from her bedroom dresser. She last saw it the night before at 10 PM. Access to her room requires walking through the main living room, which was busy until midnight. There are no signs of forced entry. The necklace was not insured. Only five people stayed overnight in the farmhouse.
+  </div>
+
+  <!-- Discussion prompt -->
+  <div class="discussion-box">
+    <div class="d-tag">💬 Discuss First</div>
+    <p>Before looking at suspects — who had reason to want ₹18 lakhs? Who would feel comfortable walking through a busy house late at night? Who would know about the necklace?</p>
+  </div>
+
+  <!-- Suspects -->
+  <div class="sh"><h2>The Suspects</h2><div class="sh-line"></div></div>
+  <div class="suspects-grid">
+    <div class="suspect-card">
+      <div class="suspect-name">Rohit Malhotra</div>
+      <div class="suspect-role">The Son, 44</div>
+      <div class="suspect-bio">Kamla's eldest son. Runs the family business. Recently took a large personal loan — details unknown. Was at the party till 11:30 PM.</div>
+    </div>
+    <div class="suspect-card">
+      <div class="suspect-name">Sunita Malhotra</div>
+      <div class="suspect-role">Daughter-in-law, 40</div>
+      <div class="suspect-bio">Rohit's wife. Has a cool relationship with Kamla. Went to bed early — says she had a headache at 9:45 PM. Her room is next to Kamla's.</div>
+    </div>
+    <div class="suspect-card">
+      <div class="suspect-name">Dev Malhotra</div>
+      <div class="suspect-role">The Grandson, 22</div>
+      <div class="suspect-bio">Rohit's son. The groom. Was supposed to be celebrating with friends in the garden. Friends say he slipped away around 11 PM "for 20 minutes."</div>
+    </div>
+    <div class="suspect-card">
+      <div class="suspect-name">Renu Sharma</div>
+      <div class="suspect-role">Live-in Housekeeper, 55</div>
+      <div class="suspect-bio">Has worked for the family for 12 years. Knows the house completely. Was seen cleaning the living room at 11:15 PM — right outside Kamla's room.</div>
+    </div>
+    <div class="suspect-card">
+      <div class="suspect-name">Kabir Anand</div>
+      <div class="suspect-role">Family Friend, 38</div>
+      <div class="suspect-bio">Old friend of Rohit's. Invited last minute. Runs an antiques trading business. Was "exploring the farmhouse" late at night. Nobody knows him well.</div>
+    </div>
+  </div>
+
+  <!-- Clues -->
+  <div class="sh"><h2>Evidence</h2><div class="sh-line"></div></div>
+  <div class="clue-grid" id="c1-clues">
+    <div class="clue-card unlocked">
+      <div class="clue-num">Clue 01 — Visible Now</div>
+      <div class="clue-text">Kamla's bedroom door was found slightly ajar in the morning. She always locks it. Her key was inside the room. The lock shows no signs of tampering.</div>
+    </div>
+    <div class="clue-card unlocked">
+      <div class="clue-num">Clue 02 — Visible Now</div>
+      <div class="clue-text">The necklace case was left on the dresser, open and empty. The dresser is visible from the door. You'd have to walk fully inside the room to reach it.</div>
+    </div>
+    <div class="clue-card locked" data-timer="🔒 Unlocks at 10:00 min" id="c1-clue3">
+      <div class="clue-num">Clue 03 — Wave 2</div>
+      <div class="clue-text">Renu the housekeeper has a spare key to all rooms — standard practice. But she claims she did not enter Kamla's room that night. She cannot explain why the door was ajar.</div>
+    </div>
+    <div class="clue-card locked" data-timer="🔒 Unlocks at 10:00 min" id="c1-clue4">
+      <div class="clue-num">Clue 04 — Wave 2</div>
+      <div class="clue-text">Rohit's loan was taken from Kabir Anand's informal lending network — not a bank. The amount: ₹14 lakhs. The repayment deadline was three days from now.</div>
+    </div>
+    <div class="clue-card locked" data-timer="🔒 Unlocks at 20:00 min" id="c1-clue5">
+      <div class="clue-num">Clue 05 — Wave 3</div>
+      <div class="clue-text">Dev (the groom) admitted he went inside to "check on Dadi." He says the room was dark and quiet. He did NOT see the necklace on the dresser — but he says he didn't look.</div>
+    </div>
+    <div class="clue-card locked" data-timer="🔒 Unlocks at 20:00 min" id="c1-clue6">
+      <div class="clue-num">Clue 06 — The Critical Clue</div>
+      <div class="clue-text">Sunita told police she went to bed at 9:45 PM with a headache. But a wedding guest photographed the party at 10:50 PM — and Sunita's distinctive shawl is visible in the background near the farmhouse hallway.</div>
+    </div>
+  </div>
+
+  <div class="discussion-box" style="margin-top:1rem;">
+    <div class="d-tag">🔥 Hot Discussion Starter</div>
+    <p>"Someone in that house is lying about where they were. Cross-check every person's alibi against the clues — whose story has a hole in it?"</p>
+  </div>
+
+  <!-- Vote -->
+  <div class="vote-section">
+    <div class="sh"><h2>Cast Your Vote</h2><div class="sh-line"></div></div>
+    <p style="font-size:0.9rem; color:var(--muted); margin-bottom:0.8rem;">Team discussion done? Choose your culprit:</p>
+    <div class="vote-grid" id="c1-vote-grid">
+      <button class="vote-btn" onclick="selectVote('c1', 'rohit', this)">Rohit Malhotra</button>
+      <button class="vote-btn" onclick="selectVote('c1', 'sunita', this)">Sunita Malhotra</button>
+      <button class="vote-btn" onclick="selectVote('c1', 'dev', this)">Dev Malhotra</button>
+      <button class="vote-btn" onclick="selectVote('c1', 'renu', this)">Renu Sharma</button>
+      <button class="vote-btn" onclick="selectVote('c1', 'kabir', this)">Kabir Anand</button>
+    </div>
+    <button class="btn btn-red" onclick="revealAnswer('c1')" id="c1-reveal-btn" disabled>Reveal the Answer</button>
+  </div>
+
+  <!-- Result -->
+  <div class="result-panel" id="c1-result">
+    <div class="result-icon" id="c1-result-icon">🎉</div>
+    <h2 id="c1-result-title">Correct!</h2>
+    <p class="result-explanation" id="c1-result-text"></p>
+    <div class="score-badge" id="c1-score-badge">+10 pts</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ CASE 2 ══════════════════════════ -->
+<div class="page" id="page-case2">
+  <div class="sh" style="margin-top:0.5rem;"><h2>Case II — The Last Reservation</h2><div class="sh-line"></div></div>
+
+  <div class="timer-widget">
+    <div>
+      <div class="timer-display" id="c2-timer">35:00</div>
+      <div class="timer-label">Time Remaining</div>
+    </div>
+    <div class="timer-btns">
+      <button class="btn btn-amber" onclick="startTimer('c2')">▶ Start</button>
+      <button class="btn btn-outline" onclick="pauseTimer('c2')">⏸ Pause</button>
+      <button class="btn btn-outline" onclick="resetTimer('c2')">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-label"><span>Investigation Progress</span><span id="c2-clue-count">0 / 6 clues unlocked</span></div>
+    <div class="progress-track"><div class="progress-fill" id="c2-progress" style="width:0%"></div></div>
+  </div>
+
+  <div class="scene-box">
+    <div class="scene-title">📋 The Scene</div>
+    Acclaimed chef Vikram Sood is found unconscious inside his own restaurant, "Saffron," at 11:30 PM — locked inside the kitchen from the inside. The back exit is bolted with a chain only accessible from within. His sous chef Preet found him after hearing a crash. Vikram was alive but had been drugged — traces of a sedative were found in his evening chai. He had no memory of the evening. A valuable signed recipe book — the original manuscript of his bestselling cookbook — was missing from his office safe. Five people had access to the restaurant that evening.
+  </div>
+
+  <div class="discussion-box">
+    <div class="d-tag">💬 Discuss First</div>
+    <p>The kitchen was locked from inside — meaning either Vikram locked himself in, OR someone locked it and left through another way. What ways could someone exit a restaurant without using the main or back doors?</p>
+  </div>
+
+  <div class="sh"><h2>The Suspects</h2><div class="sh-line"></div></div>
+  <div class="suspects-grid">
+    <div class="suspect-card">
+      <div class="suspect-name">Preet Kaur</div>
+      <div class="suspect-role">Sous Chef, 29</div>
+      <div class="suspect-bio">Vikram's most trusted assistant. Has been with him 5 years. Was the one who "found" him. Claims she was in the dining area the whole evening doing inventory.</div>
+    </div>
+    <div class="suspect-card">
+      <div class="suspect-name">Tarun Mehta</div>
+      <div class="suspect-role">Restaurant Manager, 36</div>
+      <div class="suspect-bio">Manages front-of-house. Had access to the safe code for supplier payments. Left early — says his mother called him at 9 PM. Returned when Preet called him.</div>
+    </div>
+    <div class="suspect-card">
+      <div class="suspect-name">Lata Bose</div>
+      <div class="suspect-role">Food Critic, 47</div>
+      <div class="suspect-bio">Was a guest for a private tasting session that evening. Known to have publicly called Vikram's book "overrated." Left at 10 PM — or so she says.</div>
+    </div>
+    <div class="suspect-card">
+      <div class="suspect-name">Aryan Sood</div>
+      <div class="suspect-role">Vikram's Nephew, 24</div>
+      <div class="suspect-bio">Was helping with the event. Has a gambling debt he's been hiding from the family. Has been seen browsing rare book auction sites on the office computer.</div>
+    </div>
+    <div class="suspect-card">
+      <div class="suspect-name">Meena Pillai</div>
+      <div class="suspect-role">Cleaning Staff, 51</div>
+      <div class="suspect-bio">Has worked at Saffron for 8 years. Knows every corner of the restaurant. Was scheduled to clean that night. Claims she left at 9:30 PM without entering the kitchen.</div>
+    </div>
+  </div>
+
+  <div class="sh"><h2>Evidence</h2><div class="sh-line"></div></div>
+  <div class="clue-grid" id="c2-clues">
+    <div class="clue-card unlocked">
+      <div class="clue-num">Clue 01 — Visible Now</div>
+      <div class="clue-text">The sedative found in Vikram's chai is a common over-the-counter antihistamine in high doses — not a prescription drug. Anyone could have obtained it.</div>
+    </div>
+    <div class="clue-card unlocked">
+      <div class="clue-num">Clue 02 — Visible Now</div>
+      <div class="clue-text">The restaurant has a staff bathroom with a window large enough for a person to climb through. It connects to an alley behind the building — separate from the back door.</div>
+    </div>
+    <div class="clue-card locked" data-timer="🔒 Unlocks at 10:00 min" id="c2-clue3">
+      <div class="clue-num">Clue 03 — Wave 2</div>
+      <div class="clue-text">Aryan's browser history shows visits to a rare books auction site. The signed manuscript was listed anonymously two days after the incident — later traced to a seller in the city.</div>
+    </div>
+    <div class="clue-card locked" data-timer="🔒 Unlocks at 10:00 min" id="c2-clue4">
+      <div class="clue-num">Clue 04 — Wave 2</div>
+      <div class="clue-text">Lata Bose's jacket was found in the staff bathroom — she claims she forgot it. But the jacket was hanging on the inside of the bathroom window latch.</div>
+    </div>
+    <div class="clue-card locked" data-timer="🔒 Unlocks at 20:00 min" id="c2-clue5">
+      <div class="clue-num">Clue 05 — Wave 3</div>
+      <div class="clue-text">Meena the cleaner told police she saw Lata Bose still inside the restaurant at 10:40 PM — not 10 PM as Lata claimed. Lata was near the office corridor, not the exit.</div>
+    </div>
+    <div class="clue-card locked" data-timer="🔒 Unlocks at 20:00 min" id="c2-clue6">
+      <div class="clue-num">Clue 06 — The Critical Clue</div>
+      <div class="clue-text">The safe was opened using Tarun's code — but Tarun's phone location data shows he was at a petrol station 6 km away at 9:45 PM. He could not have opened the safe after 9 PM. Someone else used his code.</div>
+    </div>
+  </div>
+
+  <div class="discussion-box" style="margin-top:1rem;">
+    <div class="d-tag">🔥 Hot Discussion Starter</div>
+    <p>"Focus on the escape route — whoever did this had to leave without being seen. Which suspect had both the knowledge and the opportunity to do that?"</p>
+  </div>
+
+  <!-- Vote -->
+  <div class="vote-section">
+    <div class="sh"><h2>Cast Your Vote</h2><div class="sh-line"></div></div>
+    <p style="font-size:0.9rem; color:var(--muted); margin-bottom:0.8rem;">Team discussion done? Choose your culprit:</p>
+    <div class="vote-grid" id="c2-vote-grid">
+      <button class="vote-btn" onclick="selectVote('c2', 'preet', this)">Preet Kaur</button>
+      <button class="vote-btn" onclick="selectVote('c2', 'tarun', this)">Tarun Mehta</button>
+      <button class="vote-btn" onclick="selectVote('c2', 'lata', this)">Lata Bose</button>
+      <button class="vote-btn" onclick="selectVote('c2', 'aryan', this)">Aryan Sood</button>
+      <button class="vote-btn" onclick="selectVote('c2', 'meena', this)">Meena Pillai</button>
+    </div>
+    <button class="btn btn-red" onclick="revealAnswer('c2')" id="c2-reveal-btn" disabled>Reveal the Answer</button>
+  </div>
+
+  <div class="result-panel" id="c2-result">
+    <div class="result-icon" id="c2-result-icon">🎉</div>
+    <h2 id="c2-result-title">Correct!</h2>
+    <p class="result-explanation" id="c2-result-text"></p>
+    <div class="score-badge" id="c2-score-badge">+10 pts</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ GM PAGE ══════════════════════════ -->
+<div class="page" id="page-gm">
+  <div class="sh" style="margin-top:0.5rem;"><h2>Game Master Guide</h2><div class="sh-line"></div></div>
+
+  <div class="gm-box"><div class="gm-tag">🔒 Host Eyes Only</div><p>This page contains full solutions, red herrings explained, and tips for managing both groups. Don't share this screen!</p></div>
+
+  <div class="sh"><h2>Case I — Full Solution</h2><div class="sh-line"></div></div>
+  <div class="card amber-glow">
+    <div class="card-tag">The Culprit</div>
+    <h3>Sunita Malhotra — The Daughter-in-Law</h3>
+    <p>Sunita knew about the loan Rohit owed to Kabir. She overheard a tense conversation between them days before the wedding. Fearing Kabir would embarrass the family or seize assets, she took the necklace herself — planning to sell it quietly and repay the debt. She used Renu's spare key (which she'd borrowed "to organise gifts") to enter Kamla's room between 10:45 and 11 PM, which is why she appeared in the background of a photo at 10:50 — heading back from the hallway. Her alibi of a 9:45 PM bedtime was entirely fabricated.</p>
+  </div>
+  <div class="two-col">
+    <div class="card"><div class="card-tag">Motive</div><p>Fear of debt exposure + protecting family reputation. Not greed — panic.</p></div>
+    <div class="card"><div class="card-tag">Method</div><p>Borrowed spare key from Renu (under false pretext). Entered during the party when noise covered movement. Room was dark — Kamla was asleep.</p></div>
+  </div>
+  <div class="card">
+    <div class="card-tag">Red Herrings — Explain to group post-game</div>
+    <p>
+      <strong>Rohit</strong> — the debt looks suspicious but he had no need to steal from his own mother when he was already negotiating an extension.<br><br>
+      <strong>Kabir</strong> — the antiques dealer looks perfect for it, but he was never near Kamla's room and had no motive to steal something he'd have to secretly sell.<br><br>
+      <strong>Dev</strong> — his 20-minute disappearance was genuinely innocent; he went to check on his grandmother (a tender moment ruined by suspicion).
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="sh"><h2>Case II — Full Solution</h2><div class="sh-line"></div></div>
+  <div class="card amber-glow">
+    <div class="card-tag">The Culprit</div>
+    <h3>Lata Bose — The Food Critic</h3>
+    <p>Lata had been publicly humiliated by Vikram, who called out her "inaccurate" reviews in an interview. She attended the private tasting specifically to steal the original manuscript — knowing it would fetch a high price and, more importantly, ruin his legacy. She drugged his chai during the tasting, waited for him to fall unconscious, opened the safe using a code she'd shoulder-surfed from Tarun during a supplier visit two weeks prior, took the manuscript, locked the kitchen from inside (leaving Vikram there), and exited through the staff bathroom window — leaving her jacket behind by mistake. Aryan's browsing history was coincidental and unrelated to this crime.</p>
+  </div>
+  <div class="two-col">
+    <div class="card"><div class="card-tag">Motive</div><p>Personal vendetta + financial gain from selling the rare manuscript.</p></div>
+    <div class="card"><div class="card-tag">Method</div><p>Sedative in chai → safe opened with stolen code → kitchen locked from inside → bathroom window exit.</p></div>
+  </div>
+  <div class="card">
+    <div class="card-tag">Red Herrings — Explain to group post-game</div>
+    <p>
+      <strong>Aryan</strong> — the gambling debt + auction browsing makes him look perfect. He was browsing for legitimate reasons (checking values of his uncle's collection as a surprise gift for a family event).<br><br>
+      <strong>Tarun</strong> — his safe code was used, which looks damning. But his verified location alibi clears him completely.<br><br>
+      <strong>Preet</strong> — "the person who found the body" is always suspicious. But her inventory logs (checked later) confirmed her presence in the dining area.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="sh"><h2>If Teams Finish Too Fast</h2><div class="sh-line"></div></div>
+  <div class="card">
+    <p>Throw in a curveball question: <em>"Wait — but how did she know the safe code? Walk me through that logic step by step."</em> Asking teams to reconstruct the full timeline of events, not just name the culprit, adds 10 minutes of rich discussion naturally.</p>
+  </div>
+
+  <div class="sh"><h2>If Teams Are Stuck</h2><div class="sh-line"></div></div>
+  <div class="card">
+    <p>Give a nudge without giving it away. For Case I: <em>"Think about who lied about where they were and what that lie hides."</em> For Case II: <em>"Focus on the escape route — who would know about that bathroom window, and who left evidence there?"</em></p>
+  </div>
+</div>
+
+<script>
+// ─── PAGE NAV ───
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.npill').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  else {
+    // find matching pill
+    document.querySelectorAll('.npill').forEach(b => {
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + id + "'")) b.classList.add('active');
+    });
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── TIMER SYSTEM ───
+const timers = {};
+
+function startTimer(caseId) {
+  if (timers[caseId] && timers[caseId].running) return;
+  if (!timers[caseId]) timers[caseId] = { seconds: 35 * 60, running: false, elapsed: 0 };
+  timers[caseId].running = true;
+  timers[caseId].interval = setInterval(() => {
+    timers[caseId].seconds--;
+    timers[caseId].elapsed++;
+    updateTimerDisplay(caseId);
+    checkClueUnlocks(caseId);
+    if (timers[caseId].seconds <= 0) {
+      clearInterval(timers[caseId].interval);
+      timers[caseId].running = false;
+      document.getElementById(caseId + '-timer').textContent = "TIME'S UP";
+      document.getElementById(caseId + '-timer').classList.add('urgent');
+    }
+  }, 1000);
+}
+
+function pauseTimer(caseId) {
+  if (timers[caseId]) {
+    clearInterval(timers[caseId].interval);
+    timers[caseId].running = false;
+  }
+}
+
+function resetTimer(caseId) {
+  if (timers[caseId]) {
+    clearInterval(timers[caseId].interval);
+  }
+  timers[caseId] = { seconds: 35 * 60, running: false, elapsed: 0 };
+  document.getElementById(caseId + '-timer').textContent = '35:00';
+  document.getElementById(caseId + '-timer').classList.remove('urgent');
+  // Re-lock clues
+  const clueIds = ['clue3','clue4','clue5','clue6'];
+  const timers_map = { clue3:'🔒 Unlocks at 10:00 min', clue4:'🔒 Unlocks at 10:00 min', clue5:'🔒 Unlocks at 20:00 min', clue6:'🔒 Unlocks at 20:00 min' };
+  clueIds.forEach(cid => {
+    const el = document.getElementById(caseId + '-' + cid);
+    if (el) { el.classList.remove('unlocked'); el.classList.add('locked'); el.setAttribute('data-timer', timers_map[cid]); }
+  });
+  document.getElementById(caseId + '-clue-count').textContent = '0 / 6 clues unlocked';
+  document.getElementById(caseId + '-progress').style.width = '0%';
+}
+
+function updateTimerDisplay(caseId) {
+  const s = timers[caseId].seconds;
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  const disp = `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  const el = document.getElementById(caseId + '-timer');
+  el.textContent = disp;
+  if (s <= 300) el.classList.add('urgent'); else el.classList.remove('urgent');
+}
+
+function checkClueUnlocks(caseId) {
+  const elapsed = timers[caseId].elapsed;
+  // Wave 2 at 10 min (600s), Wave 3 at 20 min (1200s)
+  const unlocks = [
+    { id: caseId + '-clue3', at: 600 },
+    { id: caseId + '-clue4', at: 600 },
+    { id: caseId + '-clue5', at: 1200 },
+    { id: caseId + '-clue6', at: 1200 },
+  ];
+  let unlocked = 2; // first 2 always unlocked
+  unlocks.forEach(u => {
+    const el = document.getElementById(u.id);
+    if (el && elapsed >= u.at && el.classList.contains('locked')) {
+      el.classList.remove('locked');
+      el.classList.add('unlocked');
+    }
+    if (el && el.classList.contains('unlocked')) unlocked++;
+  });
+  document.getElementById(caseId + '-clue-count').textContent = unlocked + ' / 6 clues unlocked';
+  document.getElementById(caseId + '-progress').style.width = (unlocked / 6 * 100) + '%';
+}
+
+// ─── VOTING ───
+const votes = {};
+
+function selectVote(caseId, suspect, btn) {
+  votes[caseId] = suspect;
+  document.querySelectorAll('#' + caseId + '-vote-grid .vote-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(caseId + '-reveal-btn').disabled = false;
+}
+
+const answers = {
+  c1: {
+    culprit: 'sunita',
+    correctTitle: '🎉 Your Team Cracked It!',
+    correctText: 'Sunita Malhotra is the culprit. She used Renu\'s spare key (borrowed under a false pretext) to enter Kamla\'s room between 10:45–11 PM. Her alibi of a 9:45 PM bedtime was fabricated — a wedding photo placed her in the hallway at 10:50 PM. Her motive: she knew about Rohit\'s debt to Kabir and planned to sell the necklace to repay it before the family discovered the truth.',
+    wrongText: 'Not quite. The culprit was Sunita Malhotra. She faked her early bedtime, borrowed the housekeeper\'s spare key, and slipped into Kamla\'s room during the party noise. Her motive — protecting the family from a humiliating debt exposure — made her crime feel almost sympathetic. Almost.',
+    correctScore: '+13 pts',
+    wrongScore: '0 pts'
+  },
+  c2: {
+    culprit: 'lata',
+    correctTitle: '🎉 Brilliant Deduction!',
+    correctText: 'Lata Bose is the culprit. She attended the private tasting specifically to steal the manuscript. She drugged Vikram\'s chai, used Tarun\'s safe code (which she\'d observed during a prior visit), took the manuscript, locked the kitchen from the inside, and escaped through the staff bathroom window — leaving her jacket behind accidentally. Aryan\'s suspicious browsing was a red herring; his auction searches were unrelated.',
+    wrongText: 'Not quite. Lata Bose was the culprit. She had both motive (a public grudge against Vikram) and means (she\'d shoulder-surfed Tarun\'s safe code weeks earlier). Her "jacket in the bathroom window" wasn\'t carelessness — it was the escape route she used. The locked kitchen was her alibi trick: make it look like no one could have been inside.',
+    correctScore: '+13 pts',
+    wrongScore: '0 pts'
+  }
+};
+
+function revealAnswer(caseId) {
+  const userVote = votes[caseId];
+  const ans = answers[caseId];
+  const isCorrect = userVote === ans.culprit;
+  const panel = document.getElementById(caseId + '-result');
+  panel.classList.add('show');
+  panel.classList.toggle('correct', isCorrect);
+  panel.classList.toggle('wrong', !isCorrect);
+  document.getElementById(caseId + '-result-icon').textContent = isCorrect ? '🏆' : '😬';
+  document.getElementById(caseId + '-result-title').textContent = isCorrect ? ans.correctTitle : 'Wrong Call...';
+  document.getElementById(caseId + '-result-text').textContent = isCorrect ? ans.correctText : ans.wrongText;
+  document.getElementById(caseId + '-score-badge').textContent = isCorrect ? ans.correctScore : ans.wrongScore;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
